@@ -64,6 +64,11 @@ namespace IrakliChkuaseli.UI.Glimmer
 
         [SerializeField] private bool previewInEditor = true;
 
+#if UNITY_EDITOR
+        private static readonly HashSet<GlimmerGroup> _activeInstances = new();
+        public static IReadOnlyCollection<GlimmerGroup> ActiveInstances => _activeInstances;
+#endif
+
         private bool _isInitialized;
         private bool _wasShowingBeforeDisable;
         private readonly List<GlimmerElementData> _elements = new();
@@ -594,6 +599,11 @@ namespace IrakliChkuaseli.UI.Glimmer
         protected override void OnEnable()
         {
             base.OnEnable();
+
+#if UNITY_EDITOR
+            _activeInstances.Add(this);
+#endif
+
             if (_wasShowingBeforeDisable)
             {
                 _wasShowingBeforeDisable = false;
@@ -604,6 +614,11 @@ namespace IrakliChkuaseli.UI.Glimmer
         protected override void OnDisable()
         {
             base.OnDisable();
+
+#if UNITY_EDITOR
+            _activeInstances.Remove(this);
+#endif
+
             _wasShowingBeforeDisable = IsShowing;
             if (IsShowing)
                 Hide();

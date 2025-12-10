@@ -1,0 +1,19 @@
+{
+    "name": "IrakliChkuaseli.Glimmer.Editor",
+    "rootNamespace": "IrakliChkuaseli.UI.Glimmer",
+    "references": [
+        "IrakliChkuaseli.Glimmer",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,189 @@
+# Glimmer
+
+GPU-accelerated shimmer loading placeholders for Unity UI.
+
+## Features
+
+- **GPU shimmer** - Shader-based animation, zero CPU overhead
+- **Explicit targets** - Assign Graphics in Inspector, use "Refresh Targets" to auto-discover
+- **Live preview** - See effect in Editor without Play mode
+- **Non-destructive** - Original materials restored on Hide()
+
+## Installation
+
+Add to `Packages/manifest.json`:
+
+```json
+{
+  "dependencies": {
+    "com.iraklichkuaseli.glimmer": "https://github.com/irakli/glimmer.git"
+  }
+}
+```
+
+## Usage
+
+### Basic
+
+```csharp
+[SerializeField] private GlimmerGroup glimmer;
+
+public void Load()
+{
+    glimmer.Show();
+
+    // ... fetch data ...
+
+    glimmer.Hide();
+}
+```
+
+### Async (Unity 6000+)
+
+```csharp
+public async Awaitable LoadAsync()
+{
+    await glimmer.ShowAsync(0.2f);  // Fade in
+
+    var data = await FetchDataAsync();
+    DisplayData(data);
+
+    await glimmer.HideAsync(0.3f);  // Fade out
+}
+```
+
+### Runtime Configuration
+
+```csharp
+// Change colors at runtime
+glimmer.SetColors(
+    baseColor: new Color(0.9f, 0.9f, 0.9f, 0.5f),
+    shimmerColor: new Color(1f, 1f, 1f, 0.5f)
+);
+
+// Change animation parameters
+glimmer.SetAnimation(
+    duration: 1.5f,   // Shimmer cycle duration
+    angle: 25f,       // Shimmer angle (-45 to 45)
+    width: 0.25f      // Shimmer band width (0.1 to 0.5)
+);
+```
+
+## Components
+
+| Component | Purpose |
+|-----------|---------|
+| `GlimmerGroup` | Main controller - add as sibling after text targets |
+| `GlimmerElement` | Per-element overrides (ignore, corner radius) |
+
+### GlimmerElement
+
+Add to any target Graphic for per-element control:
+
+| Property | Description |
+|----------|-------------|
+| `IgnoreGlimmer` | Exclude this element from the shimmer effect |
+| `CornerRadius` | Override corner radius (when enabled) |
+
+## Setup
+
+**Create via menu:** GameObject > UI > Glimmer Group
+
+**Important:** Place `GlimmerGroup` **after** any sibling TextMeshPro elements.
+
+```
+Container
+├── Image
+├── TMP_Text      ← text target (index 1)
+├── GlimmerGroup  ← must be after text (index 2+)
+└── Background    ← other elements can be after
+```
+
+**Why?** Unity UI renders siblings in hierarchy order. For TextMeshPro elements, GlimmerGroup renders its own mesh quads as placeholders (the text is made transparent). If GlimmerGroup is before a text target, the placeholder will be obscured.
+
+The Inspector will warn you if GlimmerGroup is incorrectly positioned and offer a "Move After Text Targets" button to fix it.
+
+## API Reference
+
+### GlimmerGroup
+
+| Method | Description |
+|--------|-------------|
+| `Show()` | Activates glimmer effect |
+| `Hide()` | Hides glimmer, restores materials |
+| `Toggle()` | Toggles between Show/Hide |
+| `ShowAsync(duration, ct)` | Fade-in animation (Unity 6000+) |
+| `HideAsync(duration, ct)` | Fade-out animation (Unity 6000+) |
+| `SetColors(base, shimmer)` | Change colors at runtime |
+| `SetAnimation(duration, angle, width)` | Change animation parameters |
+| `Initialize()` | Pre-warm glimmer (call during screen setup) |
+| `Refresh()` | Force refresh of all materials |
+| `RefreshTargets()` | (Editor) Re-discover Graphics in hierarchy |
+| `ClearTargets()` | (Editor) Clear all target Graphics |
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `IsShowing` | `bool` | Whether glimmer is currently visible |
+| `TargetGraphics` | `IReadOnlyList<Graphic>` | List of target Graphics |
+
+### Events
+
+| Event | Description |
+|-------|-------------|
+| `StateChanged` | Fired when `IsShowing` changes (parameter: bool isShowing) |
+| `PropertiesChanged` | Fired when colors or animation parameters change |
+
+## Advanced Usage
+
+### Async Cancellation
+
+`ShowAsync` and `HideAsync` support cancellation tokens. If cancelled mid-animation, they throw `OperationCanceledException`:
+
+```csharp
+var cts = new CancellationTokenSource();
+
+try
+{
+    await glimmer.ShowAsync(0.5f, cts.Token);
+}
+catch (OperationCanceledException)
+{
+    // Animation was cancelled - call Hide() to reset state
+    glimmer.Hide();
+}
+```
+
+### Material Lifecycle
+
+GlimmerGroup manages materials non-destructively:
+- Original materials and colors are saved during `Show()`
+- Cached glimmer materials are reused across Show/Hide cycles
+- Original materials are restored on `Hide()`
+- All cached materials are destroyed on component destruction
+
+### Component Enable/Disable
+
+If GlimmerGroup is disabled while showing, it will automatically resume showing when re-enabled.
+
+### Pre-warming
+
+Call `Initialize()` during screen setup to avoid first-show latency:
+
+```csharp
+private void Start()
+{
+    glimmer.Initialize(); // Pre-load shader, ready for instant Show()
+}
+```
+
+## Requirements
+
+- Unity 2021.3+ (base functionality)
+- Unity 6000+ (async `ShowAsync`/`HideAsync`)
+- TextMeshPro
+
+## License
+
+MIT

@@ -74,6 +74,7 @@ namespace IrakliChkuaseli.UI.Glimmer
         private readonly List<GlimmerElementData> _elements = new();
         private readonly List<TextGlimmerRect> _textRects = new();
         private readonly Dictionary<int, Material> _materialCache = new();
+        private Material _textMaterial;
         private Shader _shimmerShader;
 
         /// <summary>
@@ -127,7 +128,7 @@ namespace IrakliChkuaseli.UI.Glimmer
 
             if (_shimmerShader == null)
             {
-                Debug.LogError($"[Glimmer] Cannot show skeleton - shader not found.", this);
+                Debug.LogError($"Cannot show skeleton - shader not found.", this);
                 IsShowing = false;
                 return;
             }
@@ -150,11 +151,9 @@ namespace IrakliChkuaseli.UI.Glimmer
             RestoreOriginalMaterials();
             _textRects.Clear();
 
-            if (material != null && material != defaultMaterial)
-            {
-                DestroyMaterial(material);
-                material = null;
-            }
+            // Don't destroy _textMaterial - it's cached for reuse
+            // Just clear the reference from the Graphic.material property
+            material = null;
 
             SetVerticesDirty();
             StateChanged?.Invoke(false);
@@ -360,8 +359,8 @@ namespace IrakliChkuaseli.UI.Glimmer
             _shimmerShader = Shader.Find(ShaderName);
             if (_shimmerShader == null)
             {
-                Debug.LogError($"[Glimmer] Shader '{ShaderName}' not found. " +
-                               "Ensure the SkeletonUI package is properly installed.", this);
+                Debug.LogError($"Shader '{ShaderName}' not found. " +
+                               "Ensure the Glimmer package is properly installed.", this);
             }
         }
 
@@ -402,12 +401,15 @@ namespace IrakliChkuaseli.UI.Glimmer
                 return;
             }
 
-            var mat = new Material(_shimmerShader);
-            ApplyShaderProperties(mat, cornerRadius);
-            mat.SetFloat(AlphaProp, 1f);
-            mat.SetVector(RectSizeProp, new Vector4(1000, 1000, 0, 0));
+            // Reuse cached text material if available
+            if (_textMaterial == null)
+                _textMaterial = new Material(_shimmerShader);
 
-            material = mat;
+            ApplyShaderProperties(_textMaterial, cornerRadius);
+            _textMaterial.SetFloat(AlphaProp, 1f);
+            _textMaterial.SetVector(RectSizeProp, new Vector4(1000, 1000, 0, 0));
+
+            material = _textMaterial;
         }
 
         private void ApplySkeletonToTargets()
@@ -417,7 +419,7 @@ namespace IrakliChkuaseli.UI.Glimmer
 
             if (targetGraphics.Count == 0)
             {
-                Debug.LogWarning($"[Glimmer] No target Graphics assigned for '{name}'. " +
+                Debug.LogWarning($"No target Graphics assigned for '{name}'. " +
                                  "Use 'Refresh Targets' in the Inspector or manually assign Graphics.", this);
                 return;
             }
@@ -426,7 +428,7 @@ namespace IrakliChkuaseli.UI.Glimmer
             {
                 if (graphic == null)
                 {
-                    Debug.LogWarning($"[Glimmer] Null graphic in target list for '{name}'. " +
+                    Debug.LogWarning($"Null graphic in target list for '{name}'. " +
                                      "Use 'Refresh Targets' to fix.", this);
                     continue;
                 }
@@ -629,6 +631,12 @@ namespace IrakliChkuaseli.UI.Glimmer
             base.OnDestroy();
             Hide();
             ClearMaterialCache();
+
+            if (_textMaterial != null)
+            {
+                DestroyMaterial(_textMaterial);
+                _textMaterial = null;
+            }
         }
     }
 }

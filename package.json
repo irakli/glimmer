@@ -1,8 +1,8 @@
 {
   "name": "com.iraklichkuaseli.glimmer",
   "displayName": "Glimmer",
-  "version": "1.0.0",
-  "unity": "2021.3",
+  "version": "1.0.1",
+  "unity": "2022.3",
   "description": "GPU-accelerated shimmer loading placeholders for Unity UI. Assign target Graphics, creates animated shimmer overlays.",
   "keywords": [
     "ui",

@@ -49,7 +49,7 @@ Or install via Package Manager:
 
 ### Requirements
 
-- Unity 2021.3 or later
+- Unity 2022.3 or later
 - Unity 6000+ for async `ShowAsync`/`HideAsync`
 - TextMeshPro
 
@@ -240,6 +240,41 @@ com.iraklichkuaseli.glimmer/
     ├── Editor/
     └── Runtime/
 ```
+
+## Troubleshooting
+
+### Glimmer not showing on TextMeshPro elements
+
+**Problem:** Text placeholders are invisible or behind other elements.
+
+**Solution:** Ensure `GlimmerGroup` is positioned **after** all `TMP_Text` targets in the hierarchy. The Inspector shows a warning and "Move After Text Targets" button if this is misconfigured.
+
+### Shader not found error
+
+**Problem:** Console shows "Shader 'UI/Glimmer/Shimmer' not found".
+
+**Solution:**
+1. Verify the package is fully imported (check `Runtime/Shaders/Glimmer.shader` exists)
+2. Try reimporting the package via Package Manager
+3. Check for shader compilation errors in the Console
+
+### Materials not restoring after Hide()
+
+**Problem:** Original materials look different after calling `Hide()`.
+
+**Solution:** This can happen if you modify target Graphics while glimmer is showing. Call `Refresh()` after modifying targets, or call `Hide()` before making changes.
+
+### Async methods not available
+
+**Problem:** `ShowAsync` and `HideAsync` don't exist.
+
+**Solution:** These methods require Unity 6000+. On older Unity versions, use synchronous `Show()`/`Hide()` methods.
+
+### Corner radius looks wrong
+
+**Problem:** Rounded corners have artifacts or look cut off.
+
+**Solution:** Corner radius is automatically clamped to half the minimum rect dimension. For very small elements, reduce the corner radius.
 
 ## License
 

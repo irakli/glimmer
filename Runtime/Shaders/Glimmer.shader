@@ -10,6 +10,7 @@ Shader "UI/Glimmer/Shimmer"
         _ShimmerSinCos ("Shimmer Sin/Cos", Vector) = (0.342, 0.940, 0.780, 0)
         _CornerRadius ("Corner Radius", Float) = 4
         _RectSize ("Rect Size", Vector) = (100, 100, 0, 0)
+        _OuterUV ("Outer UV", Vector) = (0, 0, 1, 1)
         _Alpha ("Alpha", Range(0, 1)) = 1
 
         // UI Stencil support
@@ -66,6 +67,7 @@ Shader "UI/Glimmer/Shimmer"
             half3 _ShimmerSinCos; // x=sin, y=cos, z=1/(|sin|+|cos|) precomputed on CPU
             half _CornerRadius;
             float4 _RectSize;
+            float4 _OuterUV;
             half _Alpha;
             float4 _ClipRect;
             sampler2D _MainTex;
@@ -84,8 +86,7 @@ Shader "UI/Glimmer/Shimmer"
                 float4 vertex : SV_POSITION;
                 half2 uv : TEXCOORD0;
                 float4 worldPosition : TEXCOORD1;
-                float2 localPos : TEXCOORD2;
-                float4 rectData : TEXCOORD3;  // Per-text rect data passed from vertex
+                float4 rectData : TEXCOORD2;  // Per-text rect data passed from vertex
                 half4 color : COLOR;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -108,18 +109,33 @@ Shader "UI/Glimmer/Shimmer"
                 o.uv = v.uv;
                 o.color = v.color;
                 o.rectData = v.uv1;  // Pass per-text rect data to fragment
-                o.localPos = (v.uv - 0.5) * _RectSize.xy;
 
                 return o;
             }
 
             half4 frag(v2f i) : SV_Target
             {
+                // For text quads, rect data is encoded in UV1 (rectData): (width, height, cornerRadius, flag)
+                // rectData.w > 0 indicates per-vertex data (text quads set flag = 1.0)
+                // For regular graphics, UV1 is (0,0,0,0) so we use uniform values
+                bool isTextQuad = i.rectData.w > 0.5;
+                float2 rectSize = isTextQuad ? i.rectData.xy : _RectSize.xy;
+                half cornerRadius = isTextQuad ? i.rectData.z : _CornerRadius;
+
+                // Remap UV from sprite atlas coordinates to 0-1 range
+                // For text quads, UVs are already 0-1; for graphics, remap using _OuterUV
+                float2 uv = i.uv;
+                if (!isTextQuad)
+                {
+                    uv.x = (uv.x - _OuterUV.x) / (_OuterUV.z - _OuterUV.x);
+                    uv.y = (uv.y - _OuterUV.y) / (_OuterUV.w - _OuterUV.y);
+                }
+
                 // Shimmer animation (speed = 1/duration, precomputed on CPU)
                 half shimmerOffset = frac(_Time.y * _ShimmerSpeed);
 
-                // Diagonal position (sin/cos/reciprocal precomputed on CPU)
-                half diag = i.uv.x * _ShimmerSinCos.y + i.uv.y * _ShimmerSinCos.x;
+                // Diagonal position using remapped UV (sin/cos/reciprocal precomputed on CPU)
+                half diag = uv.x * _ShimmerSinCos.y + uv.y * _ShimmerSinCos.x;
                 diag *= _ShimmerSinCos.z; // Normalize using precomputed 1/(|sin|+|cos|)
 
                 // Shimmer band
@@ -127,21 +143,18 @@ Shader "UI/Glimmer/Shimmer"
                 half shimmerInfluence = 1.0 - saturate(abs(diag - shimmerPos) / _ShimmerWidth);
                 shimmerInfluence = smoothstep(0.0, 1.0, shimmerInfluence);
 
-                // For text quads, rect data is encoded in UV1 (rectData): (width, height, cornerRadius, flag)
-                // rectData.w > 0 indicates per-vertex data (text quads set flag = 1.0)
-                // For regular graphics, UV1 is (0,0,0,0) so we use uniform values
-                bool isTextQuad = i.rectData.w > 0.5;
-                float2 rectSize = isTextQuad ? i.rectData.xy : _RectSize.xy;
-                half cornerRadius = isTextQuad ? i.rectData.z : _CornerRadius;
-                float2 localPos = isTextQuad ? (i.uv - 0.5) * rectSize : i.localPos;
+                // Calculate local position from UV (maps 0-1 to -halfSize to +halfSize)
+                float2 localPos = (uv - 0.5) * rectSize;
 
                 // Rounded rectangle SDF
+                // Clamp corner radius to half the minimum dimension to prevent artifacts
                 float2 rectHalfSize = rectSize * 0.5;
-                half sdf = sdRoundedBox(localPos, rectHalfSize, cornerRadius);
+                half clampedRadius = min(cornerRadius, min(rectHalfSize.x, rectHalfSize.y));
+                half sdf = sdRoundedBox(localPos, rectHalfSize, clampedRadius);
 
-                // Anti-aliased edge (1.5x multiplier for smoother AA coverage)
-                half edgeWidth = fwidth(sdf) * 1.5;
-                half rectAlpha = 1.0 - smoothstep(-edgeWidth, edgeWidth, sdf);
+                // Anti-aliased edge
+                half edgeWidth = fwidth(sdf) * 0.5;
+                half rectAlpha = smoothstep(edgeWidth, -edgeWidth, sdf);
 
                 // Final color
                 half4 finalColor = lerp(_BaseColor, _ShimmerColor, shimmerInfluence);

@@ -48,6 +48,7 @@ namespace IrakliChkuaseli.UI.Glimmer
         private static readonly int ShimmerSinCosProp = Shader.PropertyToID("_ShimmerSinCos");
         private static readonly int CornerRadiusProp = Shader.PropertyToID("_CornerRadius");
         private static readonly int RectSizeProp = Shader.PropertyToID("_RectSize");
+        private static readonly int OuterUVProp = Shader.PropertyToID("_OuterUV");
         private static readonly int AlphaProp = Shader.PropertyToID("_Alpha");
 
         [SerializeField] private List<Graphic> targetGraphics = new();
@@ -470,6 +471,12 @@ namespace IrakliChkuaseli.UI.Glimmer
 
                     var rect = graphic.rectTransform.rect;
                     mat.SetVector(RectSizeProp, new Vector4(rect.width, rect.height, 0, 0));
+
+                    // Get outer UV bounds from sprite (for sprite atlas support)
+                    var outerUV = new Vector4(0, 0, 1, 1);
+                    if (graphic is Image image && image.sprite != null)
+                        outerUV = UnityEngine.Sprites.DataUtility.GetOuterUV(image.sprite);
+                    mat.SetVector(OuterUVProp, outerUV);
 
                     element.glimmerMaterial = mat;
                     graphic.material = mat;

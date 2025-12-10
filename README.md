@@ -2,16 +2,36 @@
 
 GPU-accelerated shimmer loading placeholders for Unity UI.
 
-## Features
-
-- **GPU shimmer** - Shader-based animation, zero CPU overhead
-- **Explicit targets** - Assign Graphics in Inspector, use "Refresh Targets" to auto-discover
-- **Live preview** - See effect in Editor without Play mode
-- **Non-destructive** - Original materials restored on Hide()
-
 ## Installation
 
-Add to `Packages/manifest.json`:
+### Via OpenUPM (Recommended)
+
+Install via [OpenUPM CLI](https://openupm.com/):
+
+```bash
+openupm add com.iraklichkuaseli.glimmer
+```
+
+Or add the package via OpenUPM scoped registry in `Packages/manifest.json`:
+
+```json
+{
+  "scopedRegistries": [
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": ["com.iraklichkuaseli"]
+    }
+  ],
+  "dependencies": {
+    "com.iraklichkuaseli.glimmer": "1.0.0"
+  }
+}
+```
+
+### Via Git URL
+
+Add this line to your `Packages/manifest.json`:
 
 ```json
 {
@@ -20,6 +40,25 @@ Add to `Packages/manifest.json`:
   }
 }
 ```
+
+Or install via Package Manager:
+1. Open Window → Package Manager
+2. Click the `+` button
+3. Select "Add package from git URL"
+4. Enter: `https://github.com/irakli/glimmer.git`
+
+### Requirements
+
+- Unity 2021.3 or later
+- Unity 6000+ for async `ShowAsync`/`HideAsync`
+- TextMeshPro
+
+## Features
+
+- **GPU shimmer** - Shader-based animation, zero CPU overhead
+- **Explicit targets** - Assign Graphics in Inspector, use "Refresh Targets" to auto-discover
+- **Live preview** - See effect in Editor without Play mode
+- **Non-destructive** - Original materials restored on Hide()
 
 ## Usage
 
@@ -178,11 +217,29 @@ private void Start()
 }
 ```
 
-## Requirements
+## Package Structure
 
-- Unity 2021.3+ (base functionality)
-- Unity 6000+ (async `ShowAsync`/`HideAsync`)
-- TextMeshPro
+```
+com.iraklichkuaseli.glimmer/
+├── package.json             # UPM package manifest
+├── README.md                # This file
+├── CHANGELOG.md             # Version history
+├── LICENSE.md               # MIT License
+├── Runtime/
+│   ├── GlimmerGroup.cs      # Main controller component
+│   ├── GlimmerElement.cs    # Per-element overrides
+│   ├── IrakliChkuaseli.Glimmer.asmdef
+│   └── Shaders/
+│       └── Glimmer.shader   # GPU shimmer shader
+├── Editor/
+│   ├── GlimmerGroupEditor.cs    # Custom inspector
+│   ├── GlimmerElementEditor.cs  # Element inspector
+│   └── IrakliChkuaseli.Glimmer.Editor.asmdef
+├── Icons/
+└── Tests/
+    ├── Editor/
+    └── Runtime/
+```
 
 ## License
 

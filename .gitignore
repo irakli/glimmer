@@ -1,16 +1,12 @@
-# Unity generated
-*.meta
+# macOS
+.DS_Store
 
 # IDE
 .idea/
-.vs/
-*.csproj
-*.sln
+.vscode/
+*.swp
+*.swo
+*~
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Build artifacts
-obj/
-bin/
+# Logs
+*.log

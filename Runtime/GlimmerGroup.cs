@@ -25,21 +25,15 @@ namespace IrakliChkuaseli.UI.Glimmer
     }
 
     /// <summary>
-    /// Main controller for skeleton loading effect. Place as a sibling to UI elements
-    /// that should display skeleton shimmer while loading.
+    /// Skeleton loading shimmer effect. Place as a sibling to UI elements that should
+    /// display a shimmer placeholder while loading.
     /// </summary>
-    /// <remarks>
-    /// <para>Target Graphics are assigned via the Inspector (explicit references).
-    /// Use "Refresh Targets" button to auto-discover Graphics in the hierarchy.</para>
-    /// <para>Use <see cref="Show"/> and <see cref="Hide"/> to control visibility,
-    /// or the async variants <see cref="ShowAsync"/> and <see cref="HideAsync"/> for fade transitions.</para>
-    /// </remarks>
     [ExecuteInEditMode]
     [DisallowMultipleComponent]
     [AddComponentMenu("UI/Effects/Glimmer Group")]
     public class GlimmerGroup : MaskableGraphic
     {
-        private const string ShaderName = "UI/Glimmer/Shimmer"; 
+        private const string ShaderName = "UI/Glimmer/Shimmer";
 
         private static readonly int BaseColorProp = Shader.PropertyToID("_BaseColor");
         private static readonly int ShimmerColorProp = Shader.PropertyToID("_ShimmerColor");
@@ -77,25 +71,10 @@ namespace IrakliChkuaseli.UI.Glimmer
         private Material _textMaterial;
         private Shader _shimmerShader;
 
-        /// <summary>
-        /// Whether the skeleton effect is currently showing.
-        /// </summary>
         public bool IsShowing { get; private set; }
-
-        /// <summary>
-        /// The list of Graphics that will be affected by the skeleton effect.
-        /// </summary>
         public IReadOnlyList<Graphic> TargetGraphics => targetGraphics;
 
-        /// <summary>
-        /// Fired when skeleton visibility changes. Parameter is true when showing, false when hidden.
-        /// </summary>
         public event Action<bool> StateChanged;
-
-        /// <summary>
-        /// Fired when visual properties change (colors, animation, corner radius).
-        /// Use for integrations that need to respond to appearance changes.
-        /// </summary>
         public event Action PropertiesChanged;
 
         protected override void Awake()
@@ -105,8 +84,7 @@ namespace IrakliChkuaseli.UI.Glimmer
         }
 
         /// <summary>
-        /// Pre-initializes the skeleton system without showing it.
-        /// Call this during screen setup to avoid first-show latency.
+        /// Pre-warms the shader. Call during screen setup to avoid first-show latency.
         /// </summary>
         public void Initialize()
         {
@@ -116,9 +94,6 @@ namespace IrakliChkuaseli.UI.Glimmer
             _isInitialized = true;
         }
 
-        /// <summary>
-        /// Activates skeleton shimmer effect on all target Graphics.
-        /// </summary>
         public void Show()
         {
             if (IsShowing) return;
@@ -140,9 +115,6 @@ namespace IrakliChkuaseli.UI.Glimmer
             StateChanged?.Invoke(true);
         }
 
-        /// <summary>
-        /// Hides skeleton effect and restores original materials.
-        /// </summary>
         public void Hide()
         {
             if (!IsShowing) return;
@@ -152,16 +124,12 @@ namespace IrakliChkuaseli.UI.Glimmer
             _textRects.Clear();
 
             // Don't destroy _textMaterial - it's cached for reuse
-            // Just clear the reference from the Graphic.material property
             material = null;
 
             SetVerticesDirty();
             StateChanged?.Invoke(false);
         }
 
-        /// <summary>
-        /// Toggles between showing and hiding the skeleton effect.
-        /// </summary>
         public void Toggle()
         {
             if (IsShowing) Hide();
@@ -169,12 +137,6 @@ namespace IrakliChkuaseli.UI.Glimmer
         }
 
 #if UNITY_6000_0_OR_NEWER
-        /// <summary>
-        /// Activates skeleton effect with a fade-in animation.
-        /// </summary>
-        /// <param name="duration">Fade duration in seconds (default: 0.2)</param>
-        /// <param name="ct">Cancellation token for async cancellation</param>
-        /// <returns>Awaitable that completes when fade finishes</returns>
         public async Awaitable ShowAsync(float duration = 0.2f, CancellationToken ct = default)
         {
             Show();
@@ -194,12 +156,6 @@ namespace IrakliChkuaseli.UI.Glimmer
             SetAlpha(1f);
         }
 
-        /// <summary>
-        /// Hides skeleton effect with a fade-out animation.
-        /// </summary>
-        /// <param name="duration">Fade duration in seconds (default: 0.2)</param>
-        /// <param name="ct">Cancellation token for async cancellation</param>
-        /// <returns>Awaitable that completes when fade finishes and skeleton is hidden</returns>
         public async Awaitable HideAsync(float duration = 0.2f, CancellationToken ct = default)
         {
             if (!IsShowing) return;
@@ -224,11 +180,6 @@ namespace IrakliChkuaseli.UI.Glimmer
         }
 #endif
 
-        /// <summary>
-        /// Sets the skeleton colors at runtime.
-        /// </summary>
-        /// <param name="newBaseColor">Background placeholder color</param>
-        /// <param name="newShimmerColor">Shimmer highlight color</param>
         public void SetColors(Color newBaseColor, Color newShimmerColor)
         {
             baseColor = newBaseColor;
@@ -240,12 +191,6 @@ namespace IrakliChkuaseli.UI.Glimmer
             PropertiesChanged?.Invoke();
         }
 
-        /// <summary>
-        /// Sets the shimmer animation parameters at runtime.
-        /// </summary>
-        /// <param name="duration">Seconds for one shimmer cycle</param>
-        /// <param name="angle">Shimmer angle in degrees (-45 to 45)</param>
-        /// <param name="width">Shimmer band width (0.1 to 0.5)</param>
         public void SetAnimation(float duration, float angle, float width)
         {
             shimmerDuration = Mathf.Max(0.1f, duration);
@@ -259,8 +204,7 @@ namespace IrakliChkuaseli.UI.Glimmer
         }
 
         /// <summary>
-        /// Forces a refresh of all skeleton materials and shader properties.
-        /// Call after modifying target Graphics at runtime.
+        /// Forces a refresh of all materials. Call after modifying target Graphics at runtime.
         /// </summary>
         public void Refresh()
         {
@@ -268,7 +212,6 @@ namespace IrakliChkuaseli.UI.Glimmer
 
             UpdateAllShaderProperties();
 
-            // Update rect sizes in materials
             foreach (var element in _elements)
             {
                 if (element.glimmerMaterial != null && element.graphic != null)
@@ -280,10 +223,6 @@ namespace IrakliChkuaseli.UI.Glimmer
         }
 
 #if UNITY_EDITOR
-        /// <summary>
-        /// Discovers all Graphics in the parent hierarchy and adds them to targetGraphics.
-        /// Elements with GlimmerElement.IgnoreGlimmer set to true are skipped.
-        /// </summary>
         [ContextMenu("Refresh Targets")]
         public void RefreshTargets()
         {
@@ -301,9 +240,6 @@ namespace IrakliChkuaseli.UI.Glimmer
             UnityEditor.EditorUtility.SetDirty(this);
         }
 
-        /// <summary>
-        /// Clears all target Graphics from the list.
-        /// </summary>
         [ContextMenu("Clear Targets")]
         public void ClearTargets()
         {
@@ -531,8 +467,6 @@ namespace IrakliChkuaseli.UI.Glimmer
             foreach (var textRect in _textRects)
             {
                 var startIndex = vh.currentVertCount;
-
-                // UV1 carries rect data: width, height, corner radius, and a flag (1.0)
                 var rectData = new Vector4(textRect.size.x, textRect.size.y, textRect.cornerRadius, 1f);
 
                 var v0 = new UIVertex
@@ -590,7 +524,6 @@ namespace IrakliChkuaseli.UI.Glimmer
                 };
             }
 
-            // Update shader properties if showing (no hide/show cycle needed)
             if (IsShowing)
                 UpdateAllShaderProperties();
 

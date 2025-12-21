@@ -24,7 +24,7 @@ Or add the package via OpenUPM scoped registry in `Packages/manifest.json`:
     }
   ],
   "dependencies": {
-    "com.iraklichkuaseli.glimmer": "1.0.0"
+    "com.iraklichkuaseli.glimmer": "1.0.2"
   }
 }
 ```
